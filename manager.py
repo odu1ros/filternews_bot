@@ -1,5 +1,6 @@
 import asyncio
 from telethon import TelegramClient, functions, errors
+from telethon.tl.types import User, Channel, Chat
 import config
 import database as db
 import time
@@ -36,7 +37,7 @@ async def main():
                 print("Telegram sync")
                 current_subscriptions.clear()
                 
-                # Iterate dialogs in Telethon
+                # iterate dialogs
                 async for dialog in client.iter_dialogs():
                     if dialog.is_channel and dialog.entity.username:
                         current_subscriptions.add(dialog.entity.username.lower())
@@ -53,13 +54,25 @@ async def main():
                 
                 for channel in channels_to_join:
                     try:
-                        print(f"   Subscribe @{channel}...", end=" ")
-                        # Telethon Join Request
-                        await client(functions.channels.JoinChannelRequest(channel))
-                        print("ОК!")
+                        try:
+                            entity = await client.get_entity(channel)
+                        except ValueError:
+                            print("Not found.")
+                            continue
+
+                        # if user
+                        if isinstance(entity, User):
+                            print("Ready to listen the user")
+                            current_subscriptions.add(channel)
+                            
+                        # if channel / chat
+                        elif isinstance(entity, (Channel, Chat)):
+                            print("Joining channel", end=" ")
+                            await client(functions.channels.JoinChannelRequest(channel))
+                            print("Done!")
+                            current_subscriptions.add(channel)
                         
-                        current_subscriptions.add(channel)
-                        await asyncio.sleep(5)
+                        await asyncio.sleep(2)
                         
                     except errors.FloodWaitError as e:
                         print(f"\n   Faced limit, wait {e.seconds} seconds")

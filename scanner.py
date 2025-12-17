@@ -21,28 +21,27 @@ def clean_text(text):
 @client.on(events.NewMessage(incoming=True))
 async def handler(event):
     """
-    Handle incoming messages from subscribed channels, 
+    Handle incoming messages from subscribed channels AND dm, 
     apply filters and deduplication,
     and queue notifications for users.
     """
-    # check if message is from a channel (not private chat)
-    if not event.is_channel:
-        return
 
-    # try to get username
     chat = await event.get_chat()
+    
     if not chat.username:
         return
         
     chat_username = chat.username.lower()
-    text = event.text or event.message.message
-    text = clean_text(text)
-    
-    if not text: return
 
-    # check if the source has subs
+    # check whether any user from the database requests news from this sourse
     subscribers = await db.get_users_for_source(chat_username)
-    if not subscribers: return
+    
+    if not subscribers: 
+        return
+
+    text = event.text or event.message.message
+    text = clean_text(text)    
+    if not text: return
 
     # debug with scores
     print(f">>> [SCANNER] Message at @{chat_username}")
