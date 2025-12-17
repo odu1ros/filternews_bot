@@ -74,7 +74,7 @@ async def add_ch(m: types.Message):
     args = m.text.split()
     if len(args) < 2: return await m.answer("⚠️ Write the channel username. \
                                             Example: /add_channel @mash")
-    ch = args[1].replace('https://t.me/', '').replace('@', '').lower()
+    ch = args[1].lower().replace('https://t.me/', '').replace('http://t.me/', '').replace('t.me/', '').replace('@', '')
     if not ch: return await m.answer("⚠️ Write the channel username. \
                                      \nExample: /add_channel @mash")
     sid = await db.add_source(ch)
@@ -166,7 +166,7 @@ def build_kb(items, prefix, is_link=False):
             # if not, just text
             left_btn = InlineKeyboardButton(
                 text=f"{item}", 
-                callback_data="ignore"  # Пустышка
+                callback_data="ignore"
             )
 
         # --- RIGHT BUTTON (delete) ---
@@ -301,9 +301,11 @@ async def notification_worker():
             try:
                 await bot.send_message(
                     user_id, 
-                    f"🔔 <b>New news for you!</b>\n<u>{reason}</u>\
+                    f"🔔 <b>New news for you!</b>\
+                        \n<u>{reason}</u>\
                         \nSource: @{source}\
-                        \n\n{text}\n\n🔗 <a href=\"{link}\"><b>Read original</b></a>", 
+                        \n\n{text[:300]}\n\n\
+                        🔗 <a href=\"{link}\"><b>Read original</b></a>", 
                     parse_mode="HTML"
                 )
                 
