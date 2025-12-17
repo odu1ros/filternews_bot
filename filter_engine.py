@@ -139,6 +139,7 @@ class FilterEngine:
         
         # trim text so that models can handle it
         analysis_text = text[:1000] 
+        lemmatized_text = self._lemmatize_text(text)
 
         # block filter
         block_filters = [val for f_type, val in filters if f_type == 'block']
