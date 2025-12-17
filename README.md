@@ -9,7 +9,7 @@
    `py manager.py`
 
    NOTE: at the first run you will be asked of your telegram credentials (phone number, then verification code)
-3. 
+3. open fresh terminal (do not close previous):
    
    `py scanner.py`
 
@@ -17,7 +17,6 @@
 
    NOTE2: at the first run you will be asked of your telegram credentials (phone number, then verification code) because it uses another session
 4. open fresh terminal (do not close previous):
-5. 
    `py bot.py`
 
 at this point you are set up. enjoy terminal logs!
