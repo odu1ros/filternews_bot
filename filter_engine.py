@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 from sentence_transformers import SentenceTransformer, util
 import config
+import pymorphy3
 import re
 
 def remove_emojis_regex(text):
@@ -33,6 +34,7 @@ def remove_emojis_regex(text):
 
 class FilterEngine:
     def __init__(self):
+        self.morph = pymorphy3.MorphAnalyzer()
         print("Loading models.")
         # model for deduplication (check whether the news is similar to previous ones)
         self.dedup_model = SentenceTransformer(config.ML_MODEL_NAME)
@@ -48,6 +50,21 @@ class FilterEngine:
 
         self.executor = ThreadPoolExecutor(max_workers=2)
         print("Models uploaded.")
+
+    # --- LEMMATIZATION HELPER ---
+    def _lemmatize_text(self, text):
+        """
+        Processess text to make it a sequence of normal form of words
+        """
+        if not text: return ""
+        
+        # remove commas
+        words = re.findall(r'\w+', text.lower())
+        
+        # lemmatize
+        lemmas = [self.morph.parse(word)[0].normal_form for word in words]
+        
+        return " ".join(lemmas)
 
     # --- SYNC INTERNAL METHODS ---
     def _check_topic_zeroshot(self, text, topic):
@@ -94,7 +111,7 @@ class FilterEngine:
         cosine_scores = util.cos_sim(new_emb, history_embs)[0]
         best_score = float(cosine_scores.max())
         
-        print(f"👯 Dedup Score: {best_score:.4f}")
+        print(f" Dedup Score: {best_score:.4f}")
         return best_score > 0.85
 
     # --- ASYNC WRAPPERS ---
@@ -108,7 +125,13 @@ class FilterEngine:
 
     # --- HELPER METHODS ---
     def check_keyword(self, text, keyword):
-        return keyword.lower() in text.lower()
+        """
+        Keyword search with lemmatization
+        """
+        clean_text = self._lemmatize_text(text)
+        clean_keyword = self._lemmatize_text(keyword)
+
+        return clean_keyword in clean_text
     
     # --- MAIN METHOD ---
     async def process_message(self, text, filters):
@@ -127,7 +150,8 @@ class FilterEngine:
         # keywords
         keyword_filters = [val for f_type, val in filters if f_type == 'keyword']
         for val in keyword_filters:
-            if self.check_keyword(text, val):
+            clean_val = self._lemmatize_text(val)
+            if clean_val in lemmatized_text:
                 return True, f"Keyword: {val}"
         
         # topics

@@ -1,6 +1,8 @@
 telethon
 tgcrypto
 
+pymorphy3
+
 aiogram>=3.0
 
 sqlalchemy
